@@ -77,6 +77,16 @@
 - **ขนาน (spike):** ทดลอง push ของ registrar OpenSIPS 3.6 (RFC 8599) ตั้งแต่ตอนนี้ — เป็นความเสี่ยงสูงสุด
 - **Exit:** register กับ node lab ได้เสถียรบนเครื่องจริง
 
+**สถานะ (5 พ.ย. 2026):**
+
+- ✅ `sip/pjsip-native/scripts/build-pjsip.sh` — PJSIP 2.17, OpenSSL 3.5.9 (static, AES-GCM → SRTP), NDK r28c, swig 4.5.1, API 26, `arm64-v8a` + `x86_64`; รันบน Linux/WSL ไม่ต้องใช้ root; ตรวจ ELF LOAD align = 0x4000 (16 KB) ทุก `.so`; ใน APK ทุก `.so` เป็น stored + 16 KB aligned
+- ✅ binary ไม่ commit (`.gitignore`) — CI build ครั้งแรกแล้ว cache ตาม hash ของ script
+- ✅ `PjsipEngine` — PJSIP ไม่มี worker thread (`threadCnt=0`, `mainThreadOnly`), thread เดียวทำทุกอย่าง + poll `libHandleEvents`; ลบ native object เอง (ไม่พึ่ง GC); transport UDP/TCP/TLS (TLS ตรวจ cert ด้วย CA ของ Android ที่รวมเป็น PEM bundle); SRTP ตาม `MediaEncryption`, `srtpSecureSignaling` เฉพาะ TLS
+- ✅ หน้า SIP test bench (debug build): กรอก domain/username/password/transport/proxy, register, โทร, รับ, mute, DTMF, log event
+- ✅ instrumented test `PjsipEngineSmokeTest` 4 ข้อผ่านบน emulator API 36 (x86_64): โหลด native lib, เริ่ม 3 transport, CA bundle > 50 cert, register ไปโดเมนที่ไม่มีจริง → `Failed(502, PJ_ERESOLVE)`
+- ⏳ **Exit ยังไม่ผ่าน** — ต้อง register กับ node lab ด้วย extension จริง (TCP 5060) บนเครื่องจริง
+- ⏳ ABI: ตัด 32-bit (`armeabi-v7a`, `x86`) ออกด้วย `abiFilters` — ถ้าต้องรองรับเครื่อง 32-bit ต้องเพิ่มใน script
+
 ### Phase 2 — Voice Calling (สัปดาห์ 3–4)
 
 - `CallStateMachine` + unit tests
@@ -151,7 +161,7 @@ Transfer, contacts (`GET directory` เดิม / `/softphone/contacts`), call 
 | 4 | Package name ของแอป | ใช้ `com.simplysip.phone` ชั่วคราว — ต้องยืนยันก่อนสร้าง Firebase project | TBD |
 | 5 | License PJSIP | GPL หรือ commercial license (Teluu) ถ้าแอป closed source | TBD |
 | 6 | สายเดียวหรือ call waiting ใน MVP | แนะนำสายเดียวใน MVP | TBD |
-| 7 | เวอร์ชัน PJSIP / NDK | pin stable release หลัง spike | TBD |
+| 7 | เวอร์ชัน PJSIP / NDK | PJSIP 2.17, OpenSSL 3.5.9, NDK r28c (pin ใน build-pjsip.sh) | ✅ spike ผ่าน |
 | 8 | Codec | G.711 ก่อน, Opus หลังทดสอบ interoperability | แนะนำแล้ว |
 | 9 | Media anchoring | rtpengine (ตาม opensips.cfg ปัจจุบัน) | ✅ ตัดสินแล้ว |
 

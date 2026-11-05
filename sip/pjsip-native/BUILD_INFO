@@ -1,0 +1,6 @@
+pjsip=2.17
+openssl=3.5.9
+ndk=r28c
+android_api=26
+abis=arm64-v8a x86_64
+swig=4.5.1

@@ -12,7 +12,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-java@v5
@@ -20,6 +20,21 @@ jobs:
           distribution: temurin
           java-version: 17
       - uses: gradle/actions/setup-gradle@v5
+      # PJSIP binaries are not committed. Rebuilt only when the build script (pinned versions) changes.
+      - name: Cache PJSIP build
+        id: pjsip-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            sip/pjsip-native/src/main/jniLibs
+            sip/pjsip-native/src/main/java/org
+            sip/pjsip-native/BUILD_INFO
+          key: pjsip-${{ hashFiles('sip/pjsip-native/scripts/build-pjsip.sh') }}
+      - name: Build PJSIP
+        if: steps.pjsip-cache.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update && sudo apt-get install -y swig
+          sip/pjsip-native/scripts/build-pjsip.sh
       - name: Build, unit tests and lint
         run: ./gradlew assembleDebug testDebugUnitTest lintDebug --stacktrace
       - name: Upload reports

@@ -26,3 +26,4 @@ rootProject.name = "SimplySIP Phone"
 include(":app")
 include(":core")
 include(":sip:engine")
+include(":sip:pjsip-native")

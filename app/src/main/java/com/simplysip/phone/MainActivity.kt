@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
+import com.simplysip.phone.ui.debug.SipDebugScreen
 import com.simplysip.phone.ui.home.HomeRoute
 import com.simplysip.phone.ui.theme.SimplySIPPhoneTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -20,7 +21,8 @@ class MainActivity : ComponentActivity() {
         setContent {
             SimplySIPPhoneTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    HomeRoute(modifier = Modifier.padding(innerPadding))
+                    val modifier = Modifier.padding(innerPadding)
+                    if (BuildConfig.DEBUG) SipDebugScreen(modifier) else HomeRoute(modifier)
                 }
             }
         }
