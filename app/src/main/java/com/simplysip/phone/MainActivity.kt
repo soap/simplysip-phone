@@ -1,0 +1,28 @@
+package com.simplysip.phone
+
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Scaffold
+import androidx.compose.ui.Modifier
+import com.simplysip.phone.ui.home.HomeRoute
+import com.simplysip.phone.ui.theme.SimplySIPPhoneTheme
+import dagger.hilt.android.AndroidEntryPoint
+
+@AndroidEntryPoint
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+        setContent {
+            SimplySIPPhoneTheme {
+                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+                    HomeRoute(modifier = Modifier.padding(innerPadding))
+                }
+            }
+        }
+    }
+}

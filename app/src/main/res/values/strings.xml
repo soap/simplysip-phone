@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name" translatable="false">SimplySIP Phone</string>
+    <string name="registration_unregistered">Not registered</string>
+    <string name="registration_registering">Registering…</string>
+    <string name="registration_registered">Registered</string>
+    <string name="registration_failed">Registration failed: %1$s</string>
+</resources>
