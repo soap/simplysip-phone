@@ -33,4 +33,20 @@ class SipAccountConfigTest {
         assertThrows(IllegalArgumentException::class.java) { config.copy(domain = " ") }
         assertThrows(IllegalArgumentException::class.java) { config.copy(port = 0) }
     }
+
+    @Test
+    fun `rejects values that would make an invalid SIP URI`() {
+        listOf("sip:acme.example.com", "acme.example.com:5060", "acme .example.com", "acme.example.com.")
+            .forEach { assertThrows(it, IllegalArgumentException::class.java) { config.copy(domain = it) } }
+        listOf("1001@acme.example.com", "10 01", "sip:1001")
+            .forEach { assertThrows(it, IllegalArgumentException::class.java) { config.copy(username = it) } }
+        listOf("sip:node1.example.com", "node1.example.com;transport=tcp")
+            .forEach { assertThrows(it, IllegalArgumentException::class.java) { config.copy(outboundProxy = it) } }
+    }
+
+    @Test
+    fun `accepts tenant domains, IPs and host-port proxies`() {
+        config.copy(domain = "dmo-2.sip.simplysip.cloud", outboundProxy = "203.0.113.10:5060")
+        config.copy(domain = "10.0.2.2", outboundProxy = "node1.example.com")
+    }
 }

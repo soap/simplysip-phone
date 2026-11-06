@@ -89,9 +89,13 @@ class PjsipEngine(
                 uaConfig.threadCnt = 0
                 uaConfig.mainThreadOnly = true
                 logConfig.level = options.logLevel.toLong()
-                logConfig.consoleLevel = 0
+                // consoleLevel gates what reaches the writer; 0 would silence it entirely.
+                logConfig.consoleLevel = options.logLevel.toLong()
                 logConfig.msgLogging = if (options.logLevel >= 5) 1L else 0L
                 logConfig.writer = writer
+                // No silence suppression: a steady RTP stream keeps NAT/rtpengine bindings alive
+                // and avoids clipped speech onsets.
+                medConfig.noVad = true
                 // Echo canceller on by default; tuning per device is Phase 2 (spec §5.4).
             }
             try {
@@ -131,22 +135,32 @@ class PjsipEngine(
     }
 
     override suspend fun registerAccount(config: SipAccountConfig) = onSipThread {
-        requireEndpoint()
+        val ep = requireEndpoint()
         val transportId = transportIds[config.transport]
             ?: error("transport ${config.transport} not available (TLS needs a CA bundle)")
         removeAccount()
 
-        val proxyHost = config.outboundProxy ?: "${config.domain}:${config.port}"
-        val transportParam = config.transport.name.lowercase()
+        // No Route header unless an outbound proxy is configured: sip-manager's OpenSIPS rejects
+        // initial requests carrying one ("403 Preload Route denied"). Transport and port go into
+        // the request URI instead.
+        val registrarUri = "sip:${config.domain}${serverParams(config)}"
+        val proxyUri = config.outboundProxy?.let { "sip:$it;transport=${config.transport.name.lowercase()};lr" }
+        // pjsua_acc_add only says PJSIP_EINVALIDURI; name the offending field instead.
+        listOfNotNull(
+            "account (user@domain)" to config.aor,
+            "registrar" to registrarUri,
+            proxyUri?.let { "outbound proxy" to it },
+        ).forEach { (field, uri) -> require(ep.utilVerifySipUri(uri) == 0) { "invalid $field URI: $uri" } }
+
         val acfg = AccountConfig().apply {
             idUri = buildString {
                 config.displayName?.let { append('"').append(it.replace("\"", "")).append("\" ") }
                 append('<').append(config.aor).append('>')
             }
-            regConfig.registrarUri = "sip:${config.domain}"
+            regConfig.registrarUri = registrarUri
             regConfig.timeoutSec = config.registrationExpirySeconds.toLong()
             sipConfig.transportId = transportId
-            sipConfig.proxies.add("sip:$proxyHost;transport=$transportParam;lr")
+            proxyUri?.let { sipConfig.proxies.add(it) }
             sipConfig.authCreds.add(AuthCredInfo("digest", "*", config.username, 0, config.password))
             mediaConfig.srtpUse = when (config.mediaEncryption) {
                 MediaEncryption.NONE -> pjmedia_srtp_use.PJMEDIA_SRTP_DISABLED
@@ -185,7 +199,9 @@ class PjsipEngine(
         val uri = if (destination.startsWith("sip:") || destination.startsWith("sips:")) {
             destination
         } else {
-            "sip:${destination.trim()}@${cfg.domain}"
+            // With an outbound proxy the Route header carries transport/port; otherwise the R-URI must.
+            val params = if (cfg.outboundProxy == null) serverParams(cfg) else ""
+            "sip:${destination.trim()}@${cfg.domain}$params"
         }
         val id = newCallId()
         val call = PjCall(this, acc, id)
@@ -304,6 +320,12 @@ class PjsipEngine(
     // ---- helpers ----------------------------------------------------------------------------
 
     private suspend fun <T> onSipThread(block: suspend () -> T): T = withContext(sipDispatcher) { block() }
+
+    /** `:port` when non-default and `;transport=` when not UDP, for URIs that target the server. */
+    private fun serverParams(cfg: SipAccountConfig): String = buildString {
+        if (cfg.port != cfg.transport.defaultPort) append(':').append(cfg.port)
+        if (cfg.transport != SipTransport.UDP) append(";transport=").append(cfg.transport.name.lowercase())
+    }
 
     private fun requireEndpoint(): Endpoint = endpoint ?: error("SipEngine.initialize() not called")
 

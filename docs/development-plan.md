@@ -84,7 +84,14 @@
 - ✅ `PjsipEngine` — PJSIP ไม่มี worker thread (`threadCnt=0`, `mainThreadOnly`), thread เดียวทำทุกอย่าง + poll `libHandleEvents`; ลบ native object เอง (ไม่พึ่ง GC); transport UDP/TCP/TLS (TLS ตรวจ cert ด้วย CA ของ Android ที่รวมเป็น PEM bundle); SRTP ตาม `MediaEncryption`, `srtpSecureSignaling` เฉพาะ TLS
 - ✅ หน้า SIP test bench (debug build): กรอก domain/username/password/transport/proxy, register, โทร, รับ, mute, DTMF, log event
 - ✅ instrumented test `PjsipEngineSmokeTest` 4 ข้อผ่านบน emulator API 36 (x86_64): โหลด native lib, เริ่ม 3 transport, CA bundle > 50 cert, register ไปโดเมนที่ไม่มีจริง → `Failed(502, PJ_ERESOLVE)`
-- ⏳ **Exit ยังไม่ผ่าน** — ต้อง register กับ node lab ด้วย extension จริง (TCP 5060) บนเครื่องจริง
+- ✅ **Exit ผ่าน (7 พ.ย. 2026)** — เครื่องจริง register `203@dmo-2.sip.simplysip.cloud` ผ่าน TCP 5060 (OpenSIPS 3.6.10) ได้; โทร `*43` (echo) และโทรหา 202 มีเสียงสองทาง (PCMU ผ่าน rtpengine)
+- สิ่งที่เจอระหว่างทดสอบกับ node lab (แก้แล้ว):
+  - `403 Preload Route denied` — OpenSIPS ปฏิเสธ initial request ที่มี `Route` header → ไม่ใส่ proxy เว้นแต่ตั้ง outbound proxy เอง; transport/port ใส่ใน R-URI แทน (`sip:<domain>;transport=tcp`). **ข้อจำกัด:** กับ script นี้ห้ามตั้ง outbound proxy
+  - `PJSIP_EINVALIDURI` ไม่บอก field — `SipAccountConfig` ตรวจ domain/username/proxy เอง และ engine ตรวจ URI ด้วย `utilVerifySipUri` ก่อน `acc.create`
+  - log ของ PJSIP ไม่ออก — `logConfig.consoleLevel` ต้องเท่ากับ `level` (0 = ปิด writer)
+  - VAD ปิด (`medConfig.noVad`) — ให้ RTP ไหลต่อเนื่อง กัน NAT/rtpengine binding หมดอายุ
+  - `401` วนจน `PJSIP_EAUTHSTALECOUNT` เกิดจากฝั่ง sip-manager: extension ยัง `Retrying · node_unreachable` (subscriber ยังไม่ถึง node) — app ควรแสดงสถานะนี้ให้ชัดใน Phase 3
+- ⏳ ยังไม่ได้ทดสอบ: register ค้างนาน/refresh, เปลี่ยนเครือข่าย, IPv6, รับสายเข้า (มีโค้ดแล้ว แต่ไม่มี push → ต้องเปิด app ค้างไว้)
 - ⏳ ABI: ตัด 32-bit (`armeabi-v7a`, `x86`) ออกด้วย `abiFilters` — ถ้าต้องรองรับเครื่อง 32-bit ต้องเพิ่มใน script
 
 ### Phase 2 — Voice Calling (สัปดาห์ 3–4)
