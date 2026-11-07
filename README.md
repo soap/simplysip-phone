@@ -1,3 +1,5 @@
+[![Android CI](https://github.com/soap/simplysip-phone/actions/workflows/android.yml/badge.svg)](https://github.com/soap/simplysip-phone/actions/workflows/android.yml)
+
 # SimplySIP Phone
 
 An Android softphone for a multi-tenant cloud IP PBX (OpenSIPS + Asterisk + rtpengine), built with Kotlin, Jetpack Compose and [PJSIP](https://www.pjsip.org/) (PJSUA2).
