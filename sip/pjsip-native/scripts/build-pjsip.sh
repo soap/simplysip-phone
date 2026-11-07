@@ -72,19 +72,19 @@ export ANDROID_NDK_ROOT="$NDK"
 TOOLCHAIN="$NDK/toolchains/llvm/prebuilt/linux-x86_64"
 
 # ---- swig -------------------------------------------------------------------------------------
-if ! command -v swig >/dev/null; then
-    SWIG_DIR="$WORK/tools/swig"
-    if [[ ! -x "$SWIG_DIR/swig/data/bin/swig" ]]; then
-        log "Fetching swig"
-        fetch "$SWIG_WHEEL_URL" "$WORK/dl/swig.whl"
-        rm -rf "$SWIG_DIR" && mkdir -p "$SWIG_DIR"
-        unzip_py "$WORK/dl/swig.whl" "$SWIG_DIR"
-    fi
-    export SWIG_LIB="$SWIG_DIR/swig/data/share/swig/$(ls "$SWIG_DIR/swig/data/share/swig" | head -1)"
-    mkdir -p "$WORK/tools/bin"
-    ln -sf "$SWIG_DIR/swig/data/bin/swig" "$WORK/tools/bin/swig"
-    export PATH="$WORK/tools/bin:$PATH"
+# Always the pinned one, like the NDK: a swig already on PATH (CI images ship one) may be a
+# different version and generate different bindings.
+SWIG_DIR="$WORK/tools/swig"
+if [[ ! -x "$SWIG_DIR/swig/data/bin/swig" ]]; then
+    log "Fetching swig"
+    fetch "$SWIG_WHEEL_URL" "$WORK/dl/swig.whl"
+    rm -rf "$SWIG_DIR" && mkdir -p "$SWIG_DIR"
+    unzip_py "$WORK/dl/swig.whl" "$SWIG_DIR"
 fi
+export SWIG_LIB="$SWIG_DIR/swig/data/share/swig/$(ls "$SWIG_DIR/swig/data/share/swig" | head -1)"
+mkdir -p "$WORK/tools/bin"
+ln -sf "$SWIG_DIR/swig/data/bin/swig" "$WORK/tools/bin/swig"
+export PATH="$WORK/tools/bin:$PATH"
 swig -version | grep -i 'SWIG Version'
 
 # ---- sources ----------------------------------------------------------------------------------

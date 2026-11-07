@@ -32,9 +32,8 @@ jobs:
           key: pjsip-${{ hashFiles('sip/pjsip-native/scripts/build-pjsip.sh') }}
       - name: Build PJSIP
         if: steps.pjsip-cache.outputs.cache-hit != 'true'
-        run: |
-          sudo apt-get update && sudo apt-get install -y swig
-          sip/pjsip-native/scripts/build-pjsip.sh
+        # The script fetches its pinned NDK and swig itself.
+        run: bash sip/pjsip-native/scripts/build-pjsip.sh
       - name: Build, unit tests and lint
         run: ./gradlew assembleDebug testDebugUnitTest lintDebug --stacktrace
       - name: Upload reports
