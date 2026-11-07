@@ -158,7 +158,8 @@ class AudioRouteManager @Inject constructor(
         AudioDeviceInfo.TYPE_BUILTIN_SPEAKER -> AudioRoute.SPEAKER
         AudioDeviceInfo.TYPE_WIRED_HEADSET,
         AudioDeviceInfo.TYPE_WIRED_HEADPHONES,
-        AudioDeviceInfo.TYPE_USB_HEADSET -> AudioRoute.WIRED_HEADSET
+        AudioDeviceInfo.TYPE_USB_HEADSET,
+        -> AudioRoute.WIRED_HEADSET
         AudioDeviceInfo.TYPE_BLUETOOTH_SCO -> AudioRoute.BLUETOOTH
         else -> if (Build.VERSION.SDK_INT >= 31 && device.type == AudioDeviceInfo.TYPE_BLE_HEADSET) AudioRoute.BLUETOOTH else null
     }

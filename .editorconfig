@@ -1,0 +1,33 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+[*.{kt,kts}]
+ktlint_code_style = android_studio
+max_line_length = 140
+# Keep trailing commas (android_studio style turns them off).
+ij_kotlin_allow_trailing_comma = true
+ij_kotlin_allow_trailing_comma_on_call_site = true
+# Compose: @Composable functions are PascalCase, and modifiers follow their own conventions.
+ktlint_function_naming_ignore_when_annotated_with = Composable
+ktlint_standard_function-naming = enabled
+# Blank lines between multi-line when branches add noise to short state machines.
+ktlint_standard_blank-line-between-when-conditions = disabled
+# Leave signature layout to the author: one line when short, one parameter per line otherwise.
+ktlint_standard_class-signature = disabled
+ktlint_standard_function-signature = disabled
+
+[*.{yml,yaml,json}]
+indent_size = 2
+
+[*.bat]
+end_of_line = crlf
+
+[*.md]
+trim_trailing_whitespace = false

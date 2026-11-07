@@ -12,9 +12,11 @@ import kotlinx.coroutines.flow.update
 sealed interface CallInput {
     data class Dialled(val callId: CallId, val destination: String) : CallInput
     data class Answering(val callId: CallId) : CallInput
+
     /** Hang up, cancel or reject — whichever fits the current state. */
     data class HangingUp(val callId: CallId) : CallInput
     data class Event(val event: SipEvent) : CallInput
+
     /** Leave [CallState.Ended] for [CallState.Idle]. */
     data object Dismissed : CallInput
 }
@@ -27,7 +29,9 @@ object CallReducer {
     fun reduce(state: CallState, input: CallInput, now: Long): CallState = when (input) {
         is CallInput.Dialled -> if (state.isFree) {
             CallState.Outgoing(input.callId, CallParty(input.destination.trim()))
-        } else state
+        } else {
+            state
+        }
 
         is CallInput.Answering -> when (state) {
             is CallState.Incoming -> if (state.callId == input.callId) state.copy(answering = true) else state
@@ -53,7 +57,9 @@ object CallReducer {
                 event.callId,
                 CallParty(SipUris.userOf(event.remoteUri), event.remoteDisplayName),
             )
-        } else state // single call: the engine already answered the second INVITE with 486
+        } else {
+            state // single call: the engine already answered the second INVITE with 486
+        }
 
         is SipEvent.CallProgress -> state.ifCall(event.callId) {
             if (it is CallState.Outgoing && event.statusCode in 180..189) it.copy(ringing = true) else it

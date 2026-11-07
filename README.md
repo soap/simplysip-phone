@@ -67,7 +67,34 @@ The full plan is in [docs/development-plan.md](docs/development-plan.md) (Thai).
    ./gradlew :sip:engine:connectedDebugAndroidTest   # PJSIP smoke tests on a device or emulator
    ```
 
-CI ([.github/workflows/android.yml](.github/workflows/android.yml)) runs the same steps and caches the PJSIP build keyed on the build script.
+CI ([.github/workflows/android.yml](.github/workflows/android.yml)) runs the same steps plus `spotlessCheck`, and caches the PJSIP build keyed on the build script.
+
+## Development
+
+### Formatting
+
+Kotlin and Gradle Kotlin DSL files are formatted with [ktlint](https://pinterest.github.io/ktlint/) through [Spotless](https://github.com/diffplug/spotless). The rules live in [.editorconfig](.editorconfig): Android Studio style, 140 columns, trailing commas. Android Studio picks up the same settings.
+
+```bash
+./gradlew spotlessCheck   # verify (CI and the pre-commit hook)
+./gradlew spotlessApply   # fix
+```
+
+### Git hooks
+
+Enable them once per clone:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+| Hook | Runs |
+|---|---|
+| `pre-commit` | `spotlessCheck` |
+| `commit-msg` | [Seven rules](https://cbea.ms/git-commit/): subject ≤ 50 characters, capitalised, no trailing period, blank second line, body lines ≤ 72 |
+| `pre-push` | `spotlessCheck assembleDebug testDebugUnitTest lintDebug` (needs the PJSIP binaries) |
+
+Skip a hook in an emergency with `--no-verify`. CI still runs the same checks.
 
 ## Trying it
 

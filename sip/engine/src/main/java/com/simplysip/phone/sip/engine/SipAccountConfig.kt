@@ -37,6 +37,7 @@ data class SipAccountConfig(
     private companion object {
         val HOST = Regex("""[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?)*""")
         val HOST_PORT = Regex("""${HOST.pattern}(:\d{1,5})?""")
+
         // RFC 3261 user part: unreserved, escaped and user-unreserved characters.
         val USER = Regex("""[A-Za-z0-9\-_.!~*'()&=+$,;?/%]+""")
     }

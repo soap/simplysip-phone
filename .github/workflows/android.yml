@@ -20,6 +20,9 @@ jobs:
           distribution: temurin
           java-version: 17
       - uses: gradle/actions/setup-gradle@v5
+      # First, so a formatting slip fails in seconds instead of after the PJSIP build.
+      - name: Formatting
+        run: ./gradlew spotlessCheck
       # PJSIP binaries are not committed. Rebuilt only when the build script (pinned versions) changes.
       - name: Cache PJSIP build
         id: pjsip-cache

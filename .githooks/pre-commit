@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Formatting (ktlint via Spotless). Fix with: ./gradlew spotlessApply
+set -euo pipefail
+cd "$(git rev-parse --show-toplevel)"
+
+echo "pre-commit: spotlessCheck"
+if ! ./gradlew spotlessCheck --quiet; then
+    echo
+    echo "Formatting violations. Run ./gradlew spotlessApply, review, then commit again." >&2
+    exit 1
+fi

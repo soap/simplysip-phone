@@ -76,8 +76,12 @@ class CallStateMachineTest {
     @Test
     fun `failed outgoing calls map SIP codes to causes`() {
         val cases = mapOf(
-            486 to EndCause.Busy, 600 to EndCause.Busy, 603 to EndCause.Declined,
-            480 to EndCause.NoAnswer, 408 to EndCause.NoAnswer, 404 to EndCause.NotFound,
+            486 to EndCause.Busy,
+            600 to EndCause.Busy,
+            603 to EndCause.Declined,
+            480 to EndCause.NoAnswer,
+            408 to EndCause.NoAnswer,
+            404 to EndCause.NotFound,
             503 to EndCause.Failed(503, "Service Unavailable"),
         )
         cases.forEach { (code, cause) ->

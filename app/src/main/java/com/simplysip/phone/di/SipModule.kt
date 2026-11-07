@@ -27,9 +27,15 @@ object SipModule {
                 .getOrNull(),
             // Level 5 logs full SIP messages (no passwords, but digest headers) — debug builds only.
             logLevel = if (BuildConfig.DEBUG) 5 else 3,
-            logSink = { level, msg -> Log.println(if (level <= 1) Log.ERROR else if (level == 2) Log.WARN else Log.DEBUG, TAG, msg) },
+            logSink = { level, msg -> Log.println(priorityOf(level), TAG, msg) },
         ),
     )
+
+    private fun priorityOf(pjLevel: Int): Int = when {
+        pjLevel <= 1 -> Log.ERROR
+        pjLevel == 2 -> Log.WARN
+        else -> Log.DEBUG
+    }
 
     private const val TAG = "pjsip"
 }

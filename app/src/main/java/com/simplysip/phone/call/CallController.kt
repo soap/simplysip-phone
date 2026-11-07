@@ -44,6 +44,7 @@ class CallController @Inject constructor(
     val registration: StateFlow<RegistrationState> = engine.registrationState
 
     private val _errors = MutableSharedFlow<CallError>(extraBufferCapacity = 8)
+
     /** One-off problems to show the user, e.g. why a call could not be placed. */
     val errors: SharedFlow<CallError> = _errors.asSharedFlow()
 
@@ -101,7 +102,8 @@ class CallController @Inject constructor(
         if (next is CallState.Incoming && !next.answering && !next.hangingUp) sounds.startRinging() else sounds.stopRinging()
 
         // Ringback when the far end rings but sends no audio of its own.
-        if (next is CallState.Outgoing && next.ringing && !next.earlyMedia && !next.hangingUp) sounds.startRingback() else sounds.stopRingback()
+        val ringback = next is CallState.Outgoing && next.ringing && !next.earlyMedia && !next.hangingUp
+        if (ringback) sounds.startRingback() else sounds.stopRingback()
 
         // Voice audio session from dialling/answering until the call is over.
         val needsAudio = next is CallState.Outgoing || next is CallState.Active ||
@@ -158,6 +160,7 @@ sealed interface CallError {
     data object EmptyNumber : CallError
     data object NotRegistered : CallError
     data object AlreadyInCall : CallError
+
     /** Technical detail from the SIP engine; shown as is. */
     data class Engine(val detail: String) : CallError
 }

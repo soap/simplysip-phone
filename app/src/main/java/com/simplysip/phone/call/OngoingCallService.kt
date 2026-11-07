@@ -54,7 +54,10 @@ class OngoingCallService : Service() {
             createChannel()
             try {
                 ServiceCompat.startForeground(
-                    this, NOTIFICATION_ID, notification(controller.state.value), ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE,
+                    this,
+                    NOTIFICATION_ID,
+                    notification(controller.state.value),
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE,
                 )
             } catch (e: Exception) {
                 // e.g. microphone permission revoked or started from the background.
@@ -81,11 +84,16 @@ class OngoingCallService : Service() {
     private fun notification(state: CallState): Notification {
         val remote = (state as? CallState.Live)?.remote?.label.orEmpty()
         val open = PendingIntent.getActivity(
-            this, 0, Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
+            this,
+            0,
+            Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
             PendingIntent.FLAG_IMMUTABLE,
         )
         val hangup = PendingIntent.getService(
-            this, 1, Intent(this, OngoingCallService::class.java).setAction(ACTION_HANGUP), PendingIntent.FLAG_IMMUTABLE,
+            this,
+            1,
+            Intent(this, OngoingCallService::class.java).setAction(ACTION_HANGUP),
+            PendingIntent.FLAG_IMMUTABLE,
         )
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_call)

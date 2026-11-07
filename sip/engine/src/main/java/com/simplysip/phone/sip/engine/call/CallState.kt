@@ -62,10 +62,13 @@ sealed interface EndCause {
     /** We hung up a connected call. */
     data object LocalHangup : EndCause
     data object RemoteHangup : EndCause
+
     /** We gave up on an outgoing call before it was answered. */
     data object Cancelled : EndCause
+
     /** We declined an incoming call. */
     data object Rejected : EndCause
+
     /** The caller gave up (or another device answered) before we answered. */
     data object Missed : EndCause
     data object Busy : EndCause

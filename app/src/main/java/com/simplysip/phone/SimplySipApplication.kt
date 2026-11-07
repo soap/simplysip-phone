@@ -13,7 +13,9 @@ class SimplySipApplication : Application() {
 
     // Created at start so incoming calls are handled even before any screen asks for it.
     @Inject lateinit var callController: CallController
+
     @Inject lateinit var registrationKeeper: RegistrationKeeper
+
     @Inject lateinit var debugAccount: Lazy<DebugAccountStore>
 
     override fun onCreate() {

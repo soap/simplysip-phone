@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Same checks as CI (.github/workflows/android.yml), minus the PJSIP build.
+# Needs the PJSIP binaries: run sip/pjsip-native/scripts/build-pjsip.sh once first.
+set -euo pipefail
+cd "$(git rev-parse --show-toplevel)"
+
+echo "pre-push: spotlessCheck assembleDebug testDebugUnitTest lintDebug"
+./gradlew spotlessCheck assembleDebug testDebugUnitTest lintDebug --quiet

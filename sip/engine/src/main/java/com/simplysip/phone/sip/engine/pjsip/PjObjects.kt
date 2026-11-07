@@ -42,7 +42,8 @@ internal class PjCall(
         val ci = info
         when (ci.state) {
             pjsip_inv_state.PJSIP_INV_STATE_EARLY,
-            pjsip_inv_state.PJSIP_INV_STATE_CALLING -> engine.onCallProgress(id, ci.lastStatusCode.toInt())
+            pjsip_inv_state.PJSIP_INV_STATE_CALLING,
+            -> engine.onCallProgress(id, ci.lastStatusCode.toInt())
             pjsip_inv_state.PJSIP_INV_STATE_CONFIRMED -> engine.onCallConfirmed(id)
             pjsip_inv_state.PJSIP_INV_STATE_DISCONNECTED -> {
                 audio = null

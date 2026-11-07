@@ -111,8 +111,9 @@ fun RegistrationBadge(state: RegistrationState, modifier: Modifier = Modifier) {
         is RegistrationState.Registered -> CallGreen to stringResource(R.string.registration_registered)
         RegistrationState.Registering -> MaterialTheme.colorScheme.tertiary to stringResource(R.string.registration_registering)
         RegistrationState.Unregistered -> MaterialTheme.colorScheme.outline to stringResource(R.string.registration_unregistered)
-        is RegistrationState.Failed -> MaterialTheme.colorScheme.error to
-            stringResource(R.string.registration_failed, listOfNotNull(state.statusCode, state.reason).joinToString(" "))
+        is RegistrationState.Failed ->
+            MaterialTheme.colorScheme.error to
+                stringResource(R.string.registration_failed, listOfNotNull(state.statusCode, state.reason).joinToString(" "))
     }
     Row(modifier, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Box(Modifier.size(10.dp).background(color, CircleShape))
