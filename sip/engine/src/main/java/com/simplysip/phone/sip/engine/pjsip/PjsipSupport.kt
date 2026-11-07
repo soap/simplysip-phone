@@ -14,18 +14,6 @@ internal object PjsipLibrary {
     }
 }
 
-/** Small helpers for `"Display" <sip:user@host>` strings from PJSIP. */
-object SipUris {
-    private val nameAddr = Regex("""^\s*(?:"([^"]*)"|([^<]*?))\s*<([^>]+)>""")
-
-    fun addressOf(value: String): String = nameAddr.find(value)?.groupValues?.get(3) ?: value.trim()
-
-    fun displayNameOf(value: String): String? {
-        val m = nameAddr.find(value) ?: return null
-        return (m.groupValues[1].ifEmpty { m.groupValues[2] }).trim().ifEmpty { null }
-    }
-}
-
 /**
  * PJSIP's OpenSSL cannot read Android's certificate store directly, so concatenate the system
  * CA certificates (PEM files) into one bundle for `TlsConfig.caListFile`.

@@ -54,29 +54,41 @@ internal class PjCall(
     }
 
     override fun onCallMediaState(prm: OnCallMediaStateParam) = guarded(engine) {
-        engine.connectAudio(this)
+        engine.onCallMedia(this)
     }
 
-    /** Wire the active audio stream to the sound device (spec §5.4). */
-    fun connectAudio(ep: Endpoint) {
+    data class MediaState(val active: Boolean, val remoteHold: Boolean)
+
+    /**
+     * Wire the audio stream to the sound device (spec §5.4). Called again after every re-INVITE;
+     * the conference bridge ignores repeated connects of the same ports.
+     */
+    fun connectAudio(ep: Endpoint): MediaState {
         val ci = info
+        var active = false
+        var remoteHold = false
         try {
             val media = ci.media
+            audio = null
             for (i in 0 until media.size) {
                 val m = media[i]
-                if (m.type == pjmedia_type.PJMEDIA_TYPE_AUDIO &&
-                    m.status == pjsua_call_media_status.PJSUA_CALL_MEDIA_ACTIVE
-                ) {
-                    val am = getAudioMedia(i)
-                    val adm = ep.audDevManager()
-                    am.startTransmit(adm.playbackDevMedia)
-                    if (!muted) adm.captureDevMedia.startTransmit(am)
-                    audio = am
+                if (m.type != pjmedia_type.PJMEDIA_TYPE_AUDIO) continue
+                when (m.status) {
+                    pjsua_call_media_status.PJSUA_CALL_MEDIA_ACTIVE -> active = true
+                    // Keep audio connected: the far end may still play music on hold.
+                    pjsua_call_media_status.PJSUA_CALL_MEDIA_REMOTE_HOLD -> remoteHold = true
+                    else -> continue
                 }
+                val am = getAudioMedia(i)
+                val adm = ep.audDevManager()
+                am.startTransmit(adm.playbackDevMedia)
+                if (!muted) adm.captureDevMedia.startTransmit(am)
+                audio = am
             }
         } finally {
             ci.delete()
         }
+        return MediaState(active, remoteHold)
     }
 
     fun setMuted(ep: Endpoint, mute: Boolean) {

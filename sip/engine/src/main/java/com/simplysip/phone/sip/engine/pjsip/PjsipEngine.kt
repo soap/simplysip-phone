@@ -7,6 +7,7 @@ import com.simplysip.phone.sip.engine.SipAccountConfig
 import com.simplysip.phone.sip.engine.SipEngine
 import com.simplysip.phone.sip.engine.SipEvent
 import com.simplysip.phone.sip.engine.SipTransport
+import com.simplysip.phone.sip.engine.SipUris
 import java.io.File
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicLong
@@ -29,6 +30,7 @@ import org.pjsip.pjsua2.AuthCredInfo
 import org.pjsip.pjsua2.CallOpParam
 import org.pjsip.pjsua2.Endpoint
 import org.pjsip.pjsua2.EpConfig
+import org.pjsip.pjsua2.IpChangeParam
 import org.pjsip.pjsua2.TransportConfig
 import org.pjsip.pjsua2.pjmedia_srtp_use
 import org.pjsip.pjsua2.pjsip_status_code
@@ -74,6 +76,7 @@ class PjsipEngine(
     private var account: PjAccount? = null
     private var accountConfig: SipAccountConfig? = null
     private val calls = mutableMapOf<CallId, PjCall>()
+    private val busyRejected = mutableSetOf<CallId>()
     private val nextCallId = AtomicLong(1)
 
     override suspend fun initialize() = onSipThread {
@@ -105,6 +108,7 @@ class PjsipEngine(
             }
             // Needs libInit (thread registry mutex). Covers a re-create on a new engine thread.
             if (!ep.libIsThreadRegistered()) ep.libRegisterThread(THREAD_NAME)
+            configureCodecs(ep)
 
             transportIds[SipTransport.UDP] = ep.transportCreate(pjsip_transport_type_e.PJSIP_TRANSPORT_UDP, TransportConfig())
             transportIds[SipTransport.TCP] = ep.transportCreate(pjsip_transport_type_e.PJSIP_TRANSPORT_TCP, TransportConfig())
@@ -159,6 +163,9 @@ class PjsipEngine(
             }
             regConfig.registrarUri = registrarUri
             regConfig.timeoutSec = config.registrationExpirySeconds.toLong()
+            // PJSIP default waits 300 s after a failure; retry sooner (plus up to 10 s jitter).
+            regConfig.firstRetryIntervalSec = FIRST_RETRY_SEC
+            regConfig.retryIntervalSec = RETRY_SEC
             sipConfig.transportId = transportId
             proxyUri?.let { sipConfig.proxies.add(it) }
             sipConfig.authCreds.add(AuthCredInfo("digest", "*", config.username, 0, config.password))
@@ -192,10 +199,39 @@ class PjsipEngine(
         setRegistration(RegistrationState.Unregistered)
     }
 
+    override suspend fun refreshRegistration() = onSipThread {
+        val acc = account ?: return@onSipThread
+        when (_registrationState.value) {
+            is RegistrationState.Registered, RegistrationState.Registering -> return@onSipThread
+            else -> Unit
+        }
+        setRegistration(RegistrationState.Registering)
+        try {
+            acc.setRegistration(true)
+        } catch (e: Exception) {
+            setRegistration(RegistrationState.Failed(null, e.message ?: "re-register failed"))
+        }
+    }
+
+    override suspend fun onNetworkChanged() = onSipThread {
+        val ep = endpoint ?: return@onSipThread
+        if (account == null) return@onSipThread
+        // Restarts listeners, closes stale TCP/TLS connections and re-registers the account.
+        val prm = IpChangeParam()
+        try {
+            ep.handleIpChange(prm)
+        } catch (e: Exception) {
+            reportError("network change handling failed", e)
+        } finally {
+            prm.delete()
+        }
+    }
+
     override suspend fun makeCall(destination: String): CallId = onSipThread {
         val acc = account ?: error("no account registered")
         val cfg = accountConfig ?: error("no account registered")
         require(destination.isNotBlank()) { "destination is blank" }
+        check(calls.keys.none { it !in busyRejected }) { "another call is in progress" }
         val uri = if (destination.startsWith("sip:") || destination.startsWith("sips:")) {
             destination
         } else {
@@ -267,6 +303,7 @@ class PjsipEngine(
             calls.values.forEach { runCatching { withParam(null) { p -> it.hangup(p) } } }
             calls.values.forEach { it.delete() }
             calls.clear()
+            busyRejected.clear()
             removeAccount()
             setRegistration(RegistrationState.Unregistered)
             pollJob?.cancel()
@@ -296,24 +333,35 @@ class PjsipEngine(
     internal fun onIncomingCall(acc: PjAccount, pjCallId: Int) {
         val id = newCallId()
         val call = PjCall(this, acc, id, pjCallId)
-        calls[id] = call
+        val busy = calls.keys.any { it !in busyRejected }
+        calls[id] = call // kept until DISCONNECTED so the native call is deleted exactly once
+        if (busy) {
+            // Single call in the MVP (plan §5 #6): refuse without telling the UI.
+            busyRejected += id
+            withParam(pjsip_status_code.PJSIP_SC_BUSY_HERE) { call.answer(it) }
+            return
+        }
         val remote = runCatching { call.info.remoteUri }.getOrDefault("")
         withParam(pjsip_status_code.PJSIP_SC_RINGING) { call.answer(it) }
         emit(SipEvent.IncomingCall(id, SipUris.addressOf(remote), SipUris.displayNameOf(remote)))
     }
 
-    internal fun onCallProgress(id: CallId, statusCode: Int) = emit(SipEvent.CallProgress(id, statusCode))
+    internal fun onCallProgress(id: CallId, statusCode: Int) = quiet(id) { emit(SipEvent.CallProgress(id, statusCode)) }
 
-    internal fun onCallConfirmed(id: CallId) = emit(SipEvent.CallConnected(id))
+    internal fun onCallConfirmed(id: CallId) = quiet(id) { emit(SipEvent.CallConnected(id)) }
 
     internal fun onCallDisconnected(id: CallId, statusCode: Int?, reason: String?) {
         val call = calls.remove(id) ?: return // already ended: idempotent (spec §4.4)
-        emit(SipEvent.CallEnded(id, statusCode, reason))
+        if (!busyRejected.remove(id)) emit(SipEvent.CallEnded(id, statusCode, reason))
         // Deleting inside the call's own callback is not allowed; do it on the next turn.
         scope.launch { call.delete() }
     }
 
-    internal fun connectAudio(call: PjCall) = endpoint?.let { call.connectAudio(it) }
+    internal fun onCallMedia(call: PjCall) {
+        val ep = endpoint ?: return
+        val media = call.connectAudio(ep)
+        quiet(call.id) { emit(SipEvent.CallMediaChanged(call.id, media.active, media.remoteHold)) }
+    }
 
     internal fun reportError(message: String, cause: Throwable?) = emit(SipEvent.Error(message, cause))
 
@@ -328,6 +376,26 @@ class PjsipEngine(
     }
 
     private fun requireEndpoint(): Endpoint = endpoint ?: error("SipEngine.initialize() not called")
+
+    /** G.711 only for now (spec §5.4, plan §5 #8); Opus after end-to-end interop tests. */
+    private fun configureCodecs(ep: Endpoint) {
+        val codecs = ep.codecEnum2()
+        try {
+            for (i in 0 until codecs.size) {
+                val codec = codecs[i]
+                val id = codec.codecId
+                val priority = CODEC_PRIORITY.entries.firstOrNull { id.startsWith(it.key, ignoreCase = true) }?.value ?: 0
+                ep.codecSetPriority(id, priority.toShort())
+            }
+        } finally {
+            codecs.delete()
+        }
+    }
+
+    /** Calls refused as busy produce no events. */
+    private inline fun quiet(id: CallId, block: () -> Unit) {
+        if (id !in busyRejected) block()
+    }
 
     private fun removeAccount() {
         account?.let { acc ->
@@ -362,6 +430,9 @@ class PjsipEngine(
     private companion object {
         const val POLL_MS = 20L
         const val THREAD_NAME = "pjsip"
+        const val FIRST_RETRY_SEC = 5L
+        const val RETRY_SEC = 60L
         const val DTMF_DIGITS = "0123456789*#ABCD"
+        val CODEC_PRIORITY = linkedMapOf("PCMU/8000" to 255, "PCMA/8000" to 254)
     }
 }

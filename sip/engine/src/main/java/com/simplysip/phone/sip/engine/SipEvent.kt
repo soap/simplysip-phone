@@ -22,6 +22,12 @@ sealed interface SipEvent {
 
     data class CallConnected(val callId: CallId) : SipEvent
 
+    /**
+     * The call's audio stream changed. [active] = RTP flows (also early media before answer);
+     * [remoteHold] = the other side put us on hold.
+     */
+    data class CallMediaChanged(val callId: CallId, val active: Boolean, val remoteHold: Boolean) : SipEvent
+
     data class CallHoldChanged(val callId: CallId, val held: Boolean) : SipEvent
 
     data class CallMuteChanged(val callId: CallId, val muted: Boolean) : SipEvent

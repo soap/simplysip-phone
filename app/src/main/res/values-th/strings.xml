@@ -3,4 +3,51 @@
     <string name="registration_registering">กำลังลงทะเบียน…</string>
     <string name="registration_registered">ลงทะเบียนแล้ว</string>
     <string name="registration_failed">ลงทะเบียนไม่สำเร็จ: %1$s</string>
+
+    <!-- Dialer -->
+    <string name="dialer_hint">กรอกหมายเลข</string>
+    <string name="dialer_call">โทร</string>
+    <string name="dialer_backspace">ลบ</string>
+    <string name="dialer_account">บัญชี SIP</string>
+    <string name="error_empty_number">กรุณากรอกหมายเลขก่อน</string>
+    <string name="error_not_registered">ยังไม่ได้ลงทะเบียน — โทรไม่ได้</string>
+    <string name="error_already_in_call">กำลังอยู่ในสายอื่น</string>
+    <string name="error_engine">โทรไม่สำเร็จ: %1$s</string>
+    <string name="error_mic_permission">ต้องอนุญาตให้ใช้ไมโครโฟนจึงจะโทรได้</string>
+
+    <!-- Call screen -->
+    <string name="call_status_calling">กำลังโทร…</string>
+    <string name="call_status_ringing">กำลังเรียก…</string>
+    <string name="call_status_incoming">สายเรียกเข้า</string>
+    <string name="call_status_connecting">กำลังเชื่อมต่อ…</string>
+    <string name="call_status_ending">กำลังวางสาย…</string>
+    <string name="call_status_on_hold">พักสายอยู่</string>
+    <string name="call_status_remote_hold">ปลายสายพักสาย</string>
+    <string name="call_answer">รับสาย</string>
+    <string name="call_decline">ปฏิเสธ</string>
+    <string name="call_hangup">วางสาย</string>
+    <string name="call_mute">ปิดไมค์</string>
+    <string name="call_keypad">แป้นกด</string>
+    <string name="call_hold">พักสาย</string>
+    <string name="call_hide_keypad">ซ่อนแป้นกด</string>
+    <string name="route_earpiece">โทรศัพท์</string>
+    <string name="route_speaker">ลำโพง</string>
+    <string name="route_wired">หูฟัง</string>
+    <string name="route_bluetooth">บลูทูธ</string>
+
+    <!-- Call ended -->
+    <string name="ended_local">วางสายแล้ว</string>
+    <string name="ended_remote">ปลายสายวางสายแล้ว</string>
+    <string name="ended_cancelled">ยกเลิกแล้ว</string>
+    <string name="ended_rejected">ปฏิเสธสายแล้ว</string>
+    <string name="ended_missed">สายที่ไม่ได้รับ</string>
+    <string name="ended_busy">สายไม่ว่าง</string>
+    <string name="ended_declined">ปลายทางปฏิเสธสาย</string>
+    <string name="ended_no_answer">ไม่มีผู้รับสาย</string>
+    <string name="ended_not_found">ไม่พบหมายเลขนี้</string>
+    <string name="ended_failed">โทรไม่สำเร็จ (%1$s)</string>
+
+    <!-- Ongoing call notification -->
+    <string name="call_channel_name">สายที่กำลังสนทนา</string>
+    <string name="call_notification_active">กำลังสนทนา</string>
 </resources>

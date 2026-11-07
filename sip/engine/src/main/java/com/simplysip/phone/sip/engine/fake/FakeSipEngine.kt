@@ -42,6 +42,12 @@ class FakeSipEngine : SipEngine {
         setRegistration(RegistrationState.Unregistered)
     }
 
+    override suspend fun refreshRegistration() {
+        account?.let { if (_registrationState.value !is RegistrationState.Registered) registerAccount(it) }
+    }
+
+    override suspend fun onNetworkChanged() = refreshRegistration()
+
     override suspend fun makeCall(destination: String): CallId {
         check(account != null) { "not registered" }
         require(destination.isNotBlank()) { "destination is blank" }

@@ -13,6 +13,12 @@ interface SipEngine {
     suspend fun initialize()
     suspend fun registerAccount(config: SipAccountConfig)
     suspend fun unregisterAccount()
+
+    /** Re-send REGISTER now if the account is not registered (e.g. app back in front). */
+    suspend fun refreshRegistration()
+
+    /** The device switched network or got one back: rebind transports and re-register (spec §5.1). */
+    suspend fun onNetworkChanged()
     suspend fun makeCall(destination: String): CallId
     suspend fun answerCall(callId: CallId)
     suspend fun rejectCall(callId: CallId)
